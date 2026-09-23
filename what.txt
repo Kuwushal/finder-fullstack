@@ -1,0 +1,32 @@
+A backend skeleton that can talk to a database. Nothing runs yet but the foundation is set.
+
+The files and what they do
+.env
+A simple text file that stores config values like your database URL. You don't hardcode sensitive stuff directly in your Python files — you put it here and read it at runtime. The python-dotenv library reads this file.
+
+database.py
+Sets up the connection to PostgreSQL. Three things it does:
+
+Creates the engine — the actual connection to your DB
+
+Creates SessionLocal — a factory for opening/closing DB sessions per request
+
+Defines Base — all your models inherit from this so SQLAlchemy knows about them
+
+models/item.py
+Describes your items table in Python. Each Column becomes a column in the database. SQLAlchemy translates this Python class into actual SQL.
+
+Keywords explained
+SQLAlchemy — lets you define database tables as Python classes and query them with Python instead of writing raw SQL.
+
+Alembic — handles database migrations. When you change your model (add a column, rename something), Alembic generates a SQL script to update the actual database to match. autogenerate means it diffs your models against the current DB and writes the migration for you.
+
+Pydantic — validates data. When a request comes into your API, Pydantic checks it has the right fields and types before it touches the database.
+
+FastAPI — the web framework. Handles incoming HTTP requests and routes them to the right function.
+
+Uvicorn — the server that actually runs FastAPI. Think of FastAPI as the app and Uvicorn as the thing that serves it.
+
+Ollama — runs LLMs locally on your machine. We'll use it to send a message like "I put my keys in the drawer" and get back structured data like {item: "keys", location: "drawer"}.
+
+

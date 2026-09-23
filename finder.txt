@@ -1,0 +1,349 @@
+# Finder — Product Design Requirements
+
+## 1. Overview
+
+**Finder** is a personal AI-powered application that remembers where the user keeps important or frequently misplaced belongings.
+
+The user does not need to manually maintain an inventory. Instead, they can naturally tell Finder when they put or move something somewhere.
+
+For example:
+
+> "I put my keys in the desk drawer."
+
+Finder extracts:
+
+> **Keys → Desk drawer**
+
+Later:
+
+> "Where are my keys?"
+
+Finder returns:
+
+> **Keys → Desk drawer**
+
+The application is designed around a simple cycle:
+
+**Put → Tell Finder → Forget → Ask Finder → Find**
+
+---
+
+## 2. Core Features
+
+### 2.1 Add Items Naturally
+
+The user can describe an action in natural language.
+
+Example:
+
+> "I put my passport in the blue folder on the top shelf."
+
+The LLM extracts:
+
+```text
+Item: Passport
+Location: Cupboard → Top shelf → Blue folder
+```
+
+If the item does not already exist, Finder creates it.
+
+The user does not need to manually create an item beforehand.
+
+---
+
+### 2.2 Update Existing Items
+
+If an existing item is moved, Finder should update its location.
+
+Example:
+
+> "I moved my keys from the drawer to my backpack."
+
+Finder updates:
+
+```text
+Keys
+Previous: Desk drawer
+Current: Backpack
+```
+
+The application should avoid creating duplicate "Keys" records.
+
+---
+
+### 2.3 Natural-Language Search
+
+The user can ask questions rather than using exact keywords.
+
+Examples:
+
+> "Where are my keys?"
+
+> "Where did I put my passport?"
+
+> "Where's the thing I use to charge my laptop?"
+
+The LLM interprets the request and helps identify the relevant stored item.
+
+The database remains the source of truth for the actual location.
+
+---
+
+### 2.4 Item Details
+
+Each stored item can contain:
+
+* Name
+* Current location
+* Description
+* Tags/aliases
+* Date added
+* Last updated
+
+---
+
+### 2.5 Location Hierarchy
+
+Locations can contain multiple levels.
+
+Example:
+
+```text
+Bedroom
+└── Cupboard
+    └── Top shelf
+        └── Blue folder
+```
+
+This allows Finder to provide precise locations.
+
+---
+
+### 2.6 Location History
+
+When an item is moved, Finder can retain its previous locations.
+
+Example:
+
+```text
+Keys
+
+Current:
+Backpack
+
+History:
+Desk drawer
+→ Jacket pocket
+→ Backpack
+```
+
+This can be useful when the user remembers where something **used to be**.
+
+---
+
+## 3. LLM Integration
+
+The application will use a **local LLM through Ollama**.
+
+### Runtime
+
+**Ollama**
+
+### Initial Model
+
+**Gemma**
+
+The model will primarily handle:
+
+* Natural-language understanding
+* Item extraction
+* Location extraction
+* Identifying whether an item is new or already stored
+* Search-query interpretation
+* Extracting aliases and relevant descriptions
+
+The LLM should **not store or independently remember locations**.
+
+The architecture is:
+
+**LLM interprets → Backend validates → PostgreSQL stores**
+
+This keeps the actual data reliable and allows normal database operations even when AI functionality is unavailable.
+
+---
+
+## 4. Technology Stack
+
+### Backend
+
+* Python
+* FastAPI
+* PostgreSQL
+* SQLAlchemy 2.0
+* Alembic
+* Pydantic
+* Ollama
+
+### Frontend
+
+* React
+* Vite
+* CSS
+
+### Testing
+
+* pytest
+* httpx
+
+### Development
+
+* Git
+* GitHub
+* Local PostgreSQL
+* Local Ollama
+
+No Docker or AWS is required for the initial version.
+
+---
+
+## 5. System Architecture
+
+```text
+                  React
+                    │
+                    ▼
+                 FastAPI
+                /       \
+               ▼         ▼
+         PostgreSQL     Ollama
+                         │
+                       Gemma
+```
+
+### Example: Adding an item
+
+```text
+"I put my keys in the second drawer."
+
+             ↓
+
+          FastAPI
+
+             ↓
+
+          Ollama
+           Gemma
+
+             ↓
+
+Item: Keys
+Location: Second drawer
+
+             ↓
+
+        PostgreSQL
+```
+
+### Example: Finding an item
+
+```text
+"Where did I put my keys?"
+
+             ↓
+
+          FastAPI
+             ↓
+          Ollama
+             ↓
+        Search intent
+        Item = Keys
+             ↓
+        PostgreSQL
+             ↓
+       Keys → 2nd drawer
+```
+
+---
+
+## 6. Initial API
+
+```text
+POST   /items
+GET    /items
+GET    /items/{id}
+PUT    /items/{id}
+DELETE /items/{id}
+
+POST   /ai/parse
+POST   /ai/search
+```
+
+The exact API structure can evolve as the database design becomes clearer.
+
+---
+
+## 7. MVP
+
+The first version should support the complete basic workflow:
+
+### Add
+
+> "I put my keys in the desk drawer."
+
+↓
+
+**Keys → Desk drawer**
+
+### Move
+
+> "I moved my keys to my backpack."
+
+↓
+
+**Keys → Backpack**
+
+### Find
+
+> "Where are my keys?"
+
+↓
+
+**Your keys are in your backpack.**
+
+The user should never need to manually manage a list of every possession. Finder should gradually build its memory as the user interacts with it.
+
+---
+
+## 8. Future Features
+
+Potential later additions:
+
+* Fuzzy search
+* Better semantic search
+* Embeddings/vector database
+* Photos of items
+* Voice input
+* Browser/mobile PWA
+* Multiple users
+* Reminders
+* "Recently moved" items
+* Item categories
+* Shared household inventory
+
+These should only be added after the core system works reliably.
+
+---
+
+## 9. Design Principle
+
+> **Finder should feel like telling a person where you put something, not filling out an inventory database.**
+
+The user talks naturally.
+
+The LLM understands.
+
+The backend structures the information.
+
+The database remembers it.
+
+The user asks later, and Finder tells them where it is.
